@@ -34,7 +34,13 @@ ONE_WEEK_CROWD_URL = {
     'CROWD_CHART_DATA': ('http://index.baidu.com/Interface/Social/getSocial/'
                  '?res={res}&res2={res2}'),
 }
+
 # 百度地图POI
+POI_QUERY_URL = ('http://api.map.baidu.com/place/v2/search?q={query}&scope=1'
+                 '&region={city}&city_limit=true'
+                 '&page_num={page_num}&page_size=20&output=json&ak={ak}')
+POI_DETAIL_URL = ('http://api.map.baidu.com/place/v2/detail?uid={uid}&scope=2'
+                 '&output=json&ak={ak}')
 # 航班迁移信息
 
 # $('#grp_social_l svg text[text-anchor=middle] tspan').text()
@@ -154,3 +160,32 @@ class BaiduBrowser(browser.Browser):
 
         r = requests.get(url, headers=self.headers).json()
         return r['data'][0]['str_age'], r['data'][0]['str_sex']
+
+    def fetch_poi_list_by_city(self, query, city, ak):
+        results = []
+        query = urllib.quote(query.encode('utf8'))
+        city = urllib.quote(city.encode('utf8'))
+        page_num = 0
+        while (True):
+            url = POI_QUERY_URL.format(
+                query = query,
+                city = city,
+                page_num = page_num,
+                ak = ak
+            )
+            r = requests.get(url).json()
+            if (r['status'] != 0 or not r['results']):
+                break
+            results.extend(r['results'])
+            page_num += 1
+        return results
+
+    def fetch_poi_detail(self, uid, ak):
+        url = POI_DETAIL_URL.format(
+            uid = uid,
+            ak = ak
+        )
+        r = requests.get(url).json()
+        if (r['status'] != 0 or not r['result']):
+            return None
+        return r['result']
