@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import copy
+import json
+import requests
 from selenium import webdriver
 from utils import log
 
@@ -14,13 +15,38 @@ HUMAN_HEADERS = {
 }
 
 class Browser(object):
-    def __init__(self):
-        self.browser = webdriver.PhantomJS()
-        self.browser.set_page_load_timeout(50)
-        self.browser.set_script_timeout(10)
-        self.headers = copy.deepcopy(HUMAN_HEADERS)
+
+    # proxy={'host':'localhost', 'port':80, 'type': 'http',
+    #        'user': 'guandong', 'password': 'password'}
+    def __init__(self, proxy=None):
+        self.proxy = proxy
+        self.session = requests.Session()
+        if self.proxy is not None:
+            if self.proxy.get('user', None) is None:
+                proxy_str = '{{"{type}":"{type}://{host}:{port}"}}'
+            else:
+                proxy_str = '{{"{type}":"{type}://{user}:{password}@{host}:{port}"}}'
+            self.session.proxies = json.loads(proxy_str.format(**self.proxy))
+        self.session.headers.update(HUMAN_HEADERS)
         self.logger = log.logger
         self.logger.info("Browser inited.")
+
+    @property
+    def browser(self):
+        if getattr(self, '_browser', None) is None:
+            if self.proxy is None:
+                browser = webdriver.PhantomJS()
+            else:
+                proxy_str = ('--proxy=https://{host}:{port},--proxy-type={type},'
+                    '--ssl-protocol=any,--ignore-ssl-errors=true')
+                if self.proxy.get('user', None) is not None:
+                    proxy_str += ',--proxy-auth={user}:{password}',
+                proxy_args = proxy_str.format(**self.proxy).split(',')
+                browser = webdriver.PhantomJS(service_args=proxy_args)
+            browser.set_page_load_timeout(50)
+            browser.set_script_timeout(10)
+            self._browser = browser
+        return self._browser
 
     def close(self):
         self.browser.quit()
@@ -31,5 +57,5 @@ class Browser(object):
                         for item in cookies])
 
     def refresh_browser_headers(self):
-	    self.headers.update({'Cookie': self.get_current_cookie_str()})
+	    self.session.headers.update({'Cookie': self.get_current_cookie_str()})
 

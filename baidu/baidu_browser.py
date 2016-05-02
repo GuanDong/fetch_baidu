@@ -3,7 +3,6 @@
 
 import time
 import urllib
-import requests
 import re
 
 import utils
@@ -68,7 +67,6 @@ class BaiduBrowser(browser.Browser):
         self.logger.info(u'请确保能够成功登陆百度，输入你的账号和密码，有验证码要手动输入一下')
         while self.browser.current_url == LOGIN_URL:
             time.sleep(1)
-        self.refresh_browser_headers()
 
     def login_with_cookie(self, baidu_account, baidu_password):
         self.browser.get('https://www.baidu.com/')
@@ -81,6 +79,8 @@ class BaiduBrowser(browser.Browser):
         self.login(baidu_account, baidu_password)
 
     def fetch_an_week_trend(self, keyword):
+        self.refresh_browser_headers()
+
         res, res2, start_date, end_date = self._trend_params(keyword)
         start, end_date, date_list = utils.get_date_info(start_date, end_date)
 
@@ -106,11 +106,11 @@ class BaiduBrowser(browser.Browser):
         return res, res2, start_date, end_date
 
     def _trend_encs(self, res, res2, start_date, end_date):
-        chart_data_url = ONE_WEEK_TREND_URL['TREND_CHART_DATA'].format(
+        url = ONE_WEEK_TREND_URL['TREND_CHART_DATA'].format(
             res=res, res2=res2, start_date=start_date, end_date=end_date
         )
 
-        r = requests.get(chart_data_url, headers=self.headers).json()
+        r = self.session.get(url).json()
         enc_s = r['data']['all'][0]['userIndexes_enc'].split(',')
         return enc_s
 
@@ -118,7 +118,7 @@ class BaiduBrowser(browser.Browser):
         url = ONE_WEEK_TREND_URL['TREND_POINT_DATA'].format(
             res=res, res2=res2, enc_index=enc, t=int(time.time()) * 1000
         )
-        r = requests.get(url, headers=self.headers)
+        r = self.session.get(url)
         content = r.json()['data']['code'][0]
         img_url = re.findall('(?is)"(/Interface/IndexShow/img/[^"]*?)"', content)
         img_url = "http://index.baidu.com%s" % img_url[0]
@@ -130,7 +130,7 @@ class BaiduBrowser(browser.Browser):
         return img_url, skip_info
 
     def _trend_value(self, img_url, skip_info):
-        r = requests.get(img_url, headers=self.headers)
+        r = self.session.get(img_url)
         return img_util.get_num(r.content, skip_info)
 
     def fetch_an_week_crowd(self, keyword):
@@ -158,7 +158,7 @@ class BaiduBrowser(browser.Browser):
             res=res, res2=res2
         )
 
-        r = requests.get(url, headers=self.headers).json()
+        r = self.session.get(url).json()
         return r['data'][0]['str_age'], r['data'][0]['str_sex']
 
     def fetch_poi_list_by_city(self, query, city, ak):
@@ -173,7 +173,7 @@ class BaiduBrowser(browser.Browser):
                 page_num = page_num,
                 ak = ak
             )
-            r = requests.get(url).json()
+            r = self.session.get(url).json()
             if (r['status'] != 0 or not r['results']):
                 break
             results.extend(r['results'])
@@ -185,7 +185,7 @@ class BaiduBrowser(browser.Browser):
             uid = uid,
             ak = ak
         )
-        r = requests.get(url).json()
+        r = self.session.get(url).json()
         if (r['status'] != 0 or not r['result']):
             return None
         return r['result']
