@@ -4,11 +4,14 @@
 import time
 import urllib
 import re
+import StringIO
+from selenium.webdriver.common.action_chains import ActionChains
 
 import utils
 import img_util
 
 from .. import browser
+from ..utils import damatuWeb
 
 # 登录页面URL
 LOGIN_URL = ('https://passport.baidu.com/v2/?login&tpl=mn&u='
@@ -55,18 +58,40 @@ POI_DETAIL_URL = ('http://api.map.baidu.com/place/v2/detail?uid={uid}&scope=2'
 class BaiduBrowser(browser.Browser):
 
     def login(self, user_name, password):
+        self.logger.info(u'登陆百度')
         self.browser.get(LOGIN_URL)
+        self._login(user_name, password)
+        self.logger.info(u'成功登陆百度')
+
+    def _login(self, user_name, password):
+        verify_obj = self.browser.find_element_by_id('TANGRAM__PSP_3__verifyCode')
+        error = self.browser.execute_script("return document.getElementById('TANGRAM__PSP_3__error').innerText;")
+        if (verify_obj.is_displayed() and error.find(u'验证码')>0):
+            if (error == u'您输入的验证码有误'):
+                verify_clear = self.browser.find_element_by_id('TANGRAM__PSP_3__verifyCode_clearbtn')
+                verify_clear.click()
+            verify_img_url = self.browser.execute_script("return document.getElementById('TANGRAM__PSP_3__verifyCodeImg').src;")
+            verify_code = self.get_verify_code(verify_img_url)
+            verify_obj.send_keys(verify_code)
+
         user_name_obj = self.browser.find_element_by_id(
             'TANGRAM__PSP_3__userName'
         )
+        user_name_obj.clear()
         user_name_obj.send_keys(user_name)
         ps_obj = self.browser.find_element_by_id('TANGRAM__PSP_3__password')
+        ps_obj.clear()
         ps_obj.send_keys(password)
+
         sub_obj = self.browser.find_element_by_id('TANGRAM__PSP_3__submit')
         sub_obj.click()
-        self.logger.info(u'请确保能够成功登陆百度，输入你的账号和密码，有验证码要手动输入一下')
-        while self.browser.current_url == LOGIN_URL:
-            time.sleep(1)
+
+        time.sleep(1)
+        if self.browser.current_url == LOGIN_URL:
+            error = self.browser.execute_script("return document.getElementById('TANGRAM__PSP_3__error').innerText;")
+            self.logger.info(u'错误信息: %s', error)
+            if (error != ''):
+                return self._login(user_name, password)
 
     def login_with_cookie(self, baidu_account, baidu_password):
         self.browser.get('https://www.baidu.com/')
@@ -77,6 +102,17 @@ class BaiduBrowser(browser.Browser):
             except:
                 continue
         self.login(baidu_account, baidu_password)
+
+    def get_verify_code(self, verify_img_url):
+        self.logger.info(u'验证: %s', verify_img_url)
+        self.refresh_browser_headers()
+        self.logger.info(u'proxies: %s', self.session.proxies)
+        raw = self.session.get(verify_img_url).content
+        dmt=damatuWeb.DamatuApi("test","test", proxies=self.session.proxies)
+        verify_code = dmt.decode_file(StringIO.StringIO(raw),200)
+        self.logger.info(u'验证码: %s', verify_code)
+        return verify_code
+
 
     def fetch_an_week_trend(self, keyword):
         self.refresh_browser_headers()

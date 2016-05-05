@@ -8,23 +8,35 @@ from fetch_browser.baidu.baidu_browser import BaiduBrowser
 from fetch_browser.utils.log import logger
 
 
-baidu = BaiduBrowser(proxy={'type':'http','host':'localhost','port':8787})
+baidu = BaiduBrowser(proxy={'host':'10.18.221.59','port':9081})
 
 logger.info('POI start')
 #jiayouzhan = baidu.fetch_poi_list_by_city(u'加油站',u'遵义','D4a1c2333a46a5181944baeb808043f1')
 #jingdian = baidu.fetch_poi_list_by_city(u'旅游景点',u'遵义','D4a1c2333a46a5181944baeb808043f1')
 #jiudian= baidu.fetch_poi_list_by_city(u'酒店',u'遵义','D4a1c2333a46a5181944baeb808043f1')
 #yiyuan = baidu.fetch_poi_list_by_city(u'医院',u'遵义','D4a1c2333a46a5181944baeb808043f1')
-yinhang = baidu.fetch_poi_list_by_city(u'银行',u'遵义','D4a1c2333a46a5181944baeb808043f1')
-pois = {}
+#yinhang = baidu.fetch_poi_list_by_city(u'银行',u'遵义','D4a1c2333a46a5181944baeb808043f1')
+#pois = {}
 #pois[u'加油站']=[{'name': p['name'], 'value':[p['location']['lng'], p['location']['lat'], 1]} for p in jiayouzhan]
 #pois[u'旅游景点']=[{'name': p['name'], 'value':[p['location']['lng'], p['location']['lat'], 1]} for p in jingdian]
 #pois[u'酒店']=[{'name': p['name'], 'value':[p['location']['lng'], p['location']['lat'], 1]} for p in jiudian]
 #pois[u'医院']=[{'name': p['name'], 'value':[p['location']['lng'], p['location']['lat'], 1]} for p in yiyuan]
-pois[u'银行']=[{'name': p['name'], 'value':[p['location']['lng'], p['location']['lat'], 1]} for p in yinhang]
-f = file('poi.json','w')
-f.write(json.dumps(pois, ensure_ascii=False).encode('utf8'))
-f.close()
+#pois[u'银行']=[{'name': p['name'], 'value':[p['location']['lng'], p['location']['lat'], 1]} for p in yinhang]
+#f = file('poi.json','w')
+#f.write(json.dumps(pois, ensure_ascii=False).encode('utf8'))
+#f.close()
+
+#sql = u'INSERT INTO tourist_destination_statistics VALUES\n'
+#value_tmpl = u"(UUID(),NOW(),NOW(),'Y',NULL,NULL,'{name}','{key}',{value[0]},{value[1]},1,NULL)"
+#value_sql_list = []
+#for key in pois.keys():
+#    for poi in pois.get(key):
+#        value_sql = value_tmpl.format(key=key, **poi)
+#        value_sql_list.append(value_sql)
+#sql = sql + ',\n'.join(value_sql_list)
+#f = file('poi.sql','w')
+#f.write(sql.encode('utf8'))
+#f.close()
 
 #jingdian = baidu.fetch_poi_list_by_city(u'旅游景点',u'遵义','D4a1c2333a46a5181944baeb808043f1')
 #j_details = [baidu.fetch_poi_detail(j['uid'], 'D4a1c2333a46a5181944baeb808043f1') for j in jingdian]
